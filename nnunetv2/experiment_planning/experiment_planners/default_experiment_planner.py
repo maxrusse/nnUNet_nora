@@ -1,4 +1,5 @@
 import shutil
+import os
 from copy import deepcopy
 from typing import List, Union, Tuple
 
@@ -499,8 +500,11 @@ class ExperimentPlanner(object):
 
         # instead of writing all that into the plans we just copy the original file. More files, but less crowded
         # per file.
-        shutil.copy(join(self.raw_dataset_folder, 'dataset.json'),
-                    join(nnUNet_preprocessed, self.dataset_name, 'dataset.json'))
+        source_dataset_json = join(self.raw_dataset_folder, 'dataset.json')
+        target_dataset_json = join(nnUNet_preprocessed, self.dataset_name, 'dataset.json')
+        # Inventory mode can map raw and preprocessed roots to the same dataset folder.
+        if os.path.abspath(source_dataset_json) != os.path.abspath(target_dataset_json):
+            shutil.copy(source_dataset_json, target_dataset_json)
 
         # json is ###. I hate it... "Object of type int64 is not JSON serializable"
         plans = {

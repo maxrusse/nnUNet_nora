@@ -1,5 +1,30 @@
 from nnunetv2.configuration import default_num_processes
 from nnunetv2.experiment_planning.plan_and_preprocess_api import extract_fingerprints, plan_experiments, preprocess
+from nnunetv2.utilities.inventory_mode import prepare_inventory_dataset, set_runtime_roots
+
+
+def _add_inventory_args(parser):
+    parser.add_argument('--inventory', type=str, required=False,
+                        help='Path to inventory JSON for source-linked (no-copy) mode.')
+    parser.add_argument('--dataset-id', type=int, required=False,
+                        help='Dataset ID used in inventory mode.')
+    parser.add_argument('--dataset-name', type=str, required=False,
+                        help='Dataset name used in inventory mode.')
+    parser.add_argument('--cache-dir', type=str, required=False,
+                        help='Cache/output root used in inventory mode (contains dataset json + preprocessed files).')
+
+
+def _resolve_dataset_ids(args, parser):
+    if args.inventory is not None:
+        missing = [k for k in ('dataset_id', 'dataset_name', 'cache_dir') if getattr(args, k) is None]
+        if missing:
+            parser.error(f"--inventory requires --dataset-id, --dataset-name and --cache-dir. Missing: {missing}")
+        prepare_inventory_dataset(args.inventory, args.cache_dir, args.dataset_id, args.dataset_name)
+        set_runtime_roots(raw_root=args.cache_dir, preprocessed_root=args.cache_dir)
+        return [args.dataset_id]
+    if args.d is None or len(args.d) == 0:
+        parser.error("Legacy mode requires -d with at least one dataset ID.")
+    return args.d
 
 
 def extract_fingerprint_entry():
@@ -23,8 +48,10 @@ def extract_fingerprint_entry():
     parser.add_argument('--verbose', required=False, action='store_true',
                         help='Set this to print a lot of stuff. Useful for debugging. Will disable progress bar! '
                              'Recommended for cluster environments')
+    _add_inventory_args(parser)
     args, unrecognized_args = parser.parse_known_args()
-    extract_fingerprints(args.d, args.fpe, args.np, args.verify_dataset_integrity, args.clean, args.verbose)
+    dataset_ids = _resolve_dataset_ids(args, parser)
+    extract_fingerprints(dataset_ids, args.fpe, args.np, args.verify_dataset_integrity, args.clean, args.verbose)
 
 
 def plan_experiment_entry():
@@ -62,8 +89,10 @@ def plan_experiment_entry():
                              'differently named plans file such that the nnunet default plans are not '
                              'overwritten. You will then need to specify your custom plans file with -p whenever '
                              'running other nnunet commands (training, inference etc)')
+    _add_inventory_args(parser)
     args, unrecognized_args = parser.parse_known_args()
-    plan_experiments(args.d, args.pl, args.gpu_memory_target, args.preprocessor_name, args.overwrite_target_spacing,
+    dataset_ids = _resolve_dataset_ids(args, parser)
+    plan_experiments(dataset_ids, args.pl, args.gpu_memory_target, args.preprocessor_name, args.overwrite_target_spacing,
                      args.overwrite_plans_name)
 
 
@@ -94,13 +123,15 @@ def preprocess_entry():
     parser.add_argument('--verbose', required=False, action='store_true',
                         help='Set this to print a lot of stuff. Useful for debugging. Will disable progress bar! '
                              'Recommended for cluster environments')
+    _add_inventory_args(parser)
     args, unrecognized_args = parser.parse_known_args()
+    dataset_ids = _resolve_dataset_ids(args, parser)
     if args.np is None:
         default_np = {"2d": 8, "3d_fullres": 4, "3d_lowres": 8}
         np = [default_np[c] if c in default_np.keys() else 4 for c in args.c]
     else:
         np = args.np
-    preprocess(args.d, args.plans_name, configurations=args.c, num_processes=np, verbose=args.verbose)
+    preprocess(dataset_ids, args.plans_name, configurations=args.c, num_processes=np, verbose=args.verbose)
 
 
 def plan_and_preprocess_entry():
@@ -173,15 +204,17 @@ def plan_and_preprocess_entry():
     parser.add_argument('--verbose', required=False, action='store_true',
                         help='Set this to print a lot of stuff. Useful for debugging. Will disable progress bar! '
                              'Recommended for cluster environments')
+    _add_inventory_args(parser)
     args = parser.parse_args()
+    dataset_ids = _resolve_dataset_ids(args, parser)
 
     # fingerprint extraction
     print("Fingerprint extraction...")
-    extract_fingerprints(args.d, args.fpe, args.npfp, args.verify_dataset_integrity, args.clean, args.verbose)
+    extract_fingerprints(dataset_ids, args.fpe, args.npfp, args.verify_dataset_integrity, args.clean, args.verbose)
 
     # experiment planning
     print('Experiment planning...')
-    plans_identifier = plan_experiments(args.d, args.pl, args.gpu_memory_target, args.preprocessor_name,
+    plans_identifier = plan_experiments(dataset_ids, args.pl, args.gpu_memory_target, args.preprocessor_name,
                                         args.overwrite_target_spacing, args.overwrite_plans_name)
 
     # manage default np
@@ -193,7 +226,7 @@ def plan_and_preprocess_entry():
     # preprocessing
     if not args.no_pp:
         print('Preprocessing...')
-        preprocess(args.d, plans_identifier, args.c, np, args.verbose)
+        preprocess(dataset_ids, plans_identifier, args.c, np, args.verbose)
 
 
 if __name__ == '__main__':

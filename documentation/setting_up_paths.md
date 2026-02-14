@@ -37,3 +37,18 @@ is where it will save them.
 ### How to set environment variables
 
 See [here](set_environment_variables.md).
+
+## Inventory Mode (No-Copy)
+
+This fork also supports an inventory-based workflow that does not require copying source data into a classic
+`imagesTr/labelsTr` dataset tree.
+
+Use CLI options instead:
+
+- `--inventory`
+- `--dataset-id`
+- `--dataset-name`
+- `--cache-dir`
+- `--results-dir` (training)
+
+See [inventory_mode.md](inventory_mode.md) for details and examples.

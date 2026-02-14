@@ -4,6 +4,29 @@ Click [here](https://github.com/MIC-DKFZ/nnUNet/tree/nnunetv1) if you were looki
 
 Coming from V1? Check out the [TLDR Migration Guide](documentation/tldr_migration_guide_from_v1.md). Reading the rest of the documentation is still strongly recommended ;-)
 
+## Fork Note: JSON Inventory Mode (No-Copy Datasets)
+This fork adds an inventory-based workflow so datasets can be referenced directly from original paths without copying
+files into a separate `imagesTr/labelsTr` raw tree.
+
+Use:
+- `--inventory`
+- `--dataset-id`
+- `--dataset-name`
+- `--cache-dir`
+- `--results-dir` (training)
+
+See full details in [documentation/inventory_mode.md](documentation/inventory_mode.md).
+
+Example:
+```bash
+nnUNetv2_plan_and_preprocess \
+  --inventory /path/to/inventory.json \
+  --dataset-id 701 \
+  --dataset-name FracAtlasMini \
+  --cache-dir /path/to/cache \
+  -c 2d -np 1 --clean
+```
+
 ## **2025-10-23 There seems to be a [severe performance regression with torch 2.9.0 and 3D convs](https://github.com/pytorch/pytorch/issues/166122) (when using AMP). Please use torch 2.8.0 or lower with nnU-Net!**
 
 

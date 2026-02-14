@@ -13,6 +13,7 @@ from nnunetv2.run.load_pretrained_weights import load_pretrained_weights
 from nnunetv2.training.nnUNetTrainer.nnUNetTrainer import nnUNetTrainer
 from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
 from nnunetv2.utilities.find_class_by_name import recursive_find_python_class
+from nnunetv2.utilities.inventory_mode import prepare_inventory_dataset, set_runtime_roots
 from torch.backends import cudnn
 
 
@@ -47,7 +48,7 @@ def get_trainer_from_args(dataset_name_or_id: Union[int, str],
                                                     'nnUNetTrainer'
 
     # handle dataset input. If it's an ID we need to convert to int from string
-    if dataset_name_or_id.startswith('Dataset'):
+    if isinstance(dataset_name_or_id, str) and dataset_name_or_id.startswith('Dataset'):
         pass
     else:
         try:
@@ -145,7 +146,13 @@ def run_training(dataset_name_or_id: Union[str, int],
                  only_run_validation: bool = False,
                  disable_checkpointing: bool = False,
                  val_with_best: bool = False,
-                 device: torch.device = torch.device('cuda')):
+                 device: torch.device = torch.device('cuda'),
+                 raw_root: Optional[str] = None,
+                 preprocessed_root: Optional[str] = None,
+                 results_root: Optional[str] = None):
+    if raw_root is not None or preprocessed_root is not None or results_root is not None:
+        set_runtime_roots(raw_root=raw_root, preprocessed_root=preprocessed_root, results_root=results_root)
+
     if plans_identifier == 'nnUNetPlans':
         print("\n############################\n"
               "INFO: You are using the old nnU-Net default plans. We have updated our recommendations. "
@@ -214,7 +221,7 @@ def run_training(dataset_name_or_id: Union[str, int],
 def run_training_entry():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('dataset_name_or_id', type=str,
+    parser.add_argument('dataset_name_or_id', nargs='?', type=str, default=None,
                         help="Dataset name or ID to train with")
     parser.add_argument('configuration', type=str,
                         help="Configuration that should be trained")
@@ -248,7 +255,33 @@ def run_training_entry():
                     help="Use this to set the device the training should run with. Available options are 'cuda' "
                          "(GPU), 'cpu' (CPU) and 'mps' (Apple M1/M2). Do NOT use this to set which GPU ID! "
                          "Use CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] instead!")
+    parser.add_argument('--inventory', type=str, required=False,
+                        help='Path to inventory JSON for source-linked (no-copy) mode.')
+    parser.add_argument('--dataset-id', type=int, required=False,
+                        help='Dataset ID used in inventory mode.')
+    parser.add_argument('--dataset-name', type=str, required=False,
+                        help='Dataset name used in inventory mode.')
+    parser.add_argument('--cache-dir', type=str, required=False,
+                        help='Cache/output root used in inventory mode (must contain preprocessed data).')
+    parser.add_argument('--results-dir', type=str, required=False,
+                        help='Results root used in inventory mode.')
     args = parser.parse_args()
+
+    dataset_name_or_id = args.dataset_name_or_id
+    raw_root = None
+    preprocessed_root = None
+    results_root = None
+    if args.inventory is not None:
+        missing = [k for k in ('dataset_id', 'dataset_name', 'cache_dir', 'results_dir') if getattr(args, k) is None]
+        if missing:
+            parser.error(f"--inventory requires --dataset-id, --dataset-name, --cache-dir and --results-dir. Missing: {missing}")
+        dataset_name_or_id, _, _ = prepare_inventory_dataset(args.inventory, args.cache_dir, args.dataset_id, args.dataset_name)
+        raw_root = args.cache_dir
+        preprocessed_root = args.cache_dir
+        results_root = args.results_dir
+        set_runtime_roots(raw_root=raw_root, preprocessed_root=preprocessed_root, results_root=results_root)
+    elif dataset_name_or_id is None:
+        parser.error("Legacy mode requires dataset_name_or_id positional argument.")
 
     assert args.device in ['cpu', 'cuda', 'mps'], f'-device must be either cpu, mps or cuda. Other devices are not tested/supported. Got: {args.device}.'
     if args.device == 'cpu':
@@ -263,9 +296,9 @@ def run_training_entry():
     else:
         device = torch.device('mps')
 
-    run_training(args.dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
+    run_training(dataset_name_or_id, args.configuration, args.fold, args.tr, args.p, args.pretrained_weights,
                  args.num_gpus, args.npz, args.c, args.val, args.disable_checkpointing, args.val_best,
-                 device=device)
+                 device=device, raw_root=raw_root, preprocessed_root=preprocessed_root, results_root=results_root)
 
 
 if __name__ == '__main__':
