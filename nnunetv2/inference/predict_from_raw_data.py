@@ -30,6 +30,7 @@ from nnunetv2.inference.sliding_window_prediction import compute_gaussian, \
 from nnunetv2.utilities.file_path_utilities import get_output_folder, check_workers_alive_and_busy
 from nnunetv2.utilities.find_class_by_name import recursive_find_python_class
 from nnunetv2.utilities.helpers import empty_cache, dummy_context
+from nnunetv2.utilities.inventory_mode import prepare_inventory_dataset, set_runtime_roots
 from nnunetv2.utilities.json_export import recursive_fix_for_json_export
 from nnunetv2.utilities.label_handling.label_handling import determine_num_input_channels
 from nnunetv2.utilities.plans_handling.plans_handler import PlansManager, ConfigurationManager
@@ -879,7 +880,7 @@ def predict_entry_point():
     parser.add_argument('-o', type=str, required=True,
                         help='Output folder. If it does not exist it will be created. Predicted segmentations will '
                              'have the same name as their source images.')
-    parser.add_argument('-d', type=str, required=True,
+    parser.add_argument('-d', type=str, required=False, default=None,
                         help='Dataset with which you would like to predict. You can specify either dataset name or id')
     parser.add_argument('-p', type=str, required=False, default='nnUNetPlans',
                         help='Plans identifier. Specify the plans in which the desired configuration is located. '
@@ -930,6 +931,16 @@ def predict_entry_point():
     parser.add_argument('--disable_progress_bar', action='store_true', required=False, default=False,
                         help='Set this flag to disable progress bar. Recommended for HPC environments (non interactive '
                              'jobs)')
+    parser.add_argument('--inventory', type=str, required=False,
+                        help='Path to inventory JSON for source-linked (no-copy) mode.')
+    parser.add_argument('--dataset-id', type=int, required=False,
+                        help='Dataset ID used in inventory mode.')
+    parser.add_argument('--dataset-name', type=str, required=False,
+                        help='Dataset name used in inventory mode.')
+    parser.add_argument('--cache-dir', type=str, required=False,
+                        help='Cache/output root used in inventory mode (must contain preprocessed data).')
+    parser.add_argument('--results-dir', type=str, required=False,
+                        help='Results root used in inventory mode.')
 
     print(
         "\n#######################################################################\nPlease cite the following paper "
@@ -939,6 +950,19 @@ def predict_entry_point():
         "Nature methods, 18(2), 203-211.\n#######################################################################\n")
 
     args = parser.parse_args()
+    if args.inventory is not None:
+        missing = [k for k in ('dataset_id', 'dataset_name', 'cache_dir', 'results_dir') if getattr(args, k) is None]
+        if missing:
+            parser.error(
+                f"--inventory requires --dataset-id, --dataset-name, --cache-dir and --results-dir. Missing: {missing}")
+        dataset_name_or_id, _, _ = prepare_inventory_dataset(args.inventory, args.cache_dir, args.dataset_id,
+                                                             args.dataset_name)
+        set_runtime_roots(raw_root=args.cache_dir, preprocessed_root=args.cache_dir, results_root=args.results_dir)
+        # In inventory mode we derive the dataset from the inventory metadata and roots.
+        args.d = dataset_name_or_id
+    elif args.d is None:
+        parser.error("Legacy mode requires -d.")
+
     args.f = [i if i == 'all' else int(i) for i in args.f]
 
     model_folder = get_output_folder(args.d, args.tr, args.p, args.c)
