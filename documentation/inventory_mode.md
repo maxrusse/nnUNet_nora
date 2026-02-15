@@ -35,6 +35,53 @@ Align hardware-related settings with your cluster profile:
 - Training workers: env `nnUNet_def_n_proc`, env `nnUNet_n_proc_DA`
 - GPU count used by training: `-num_gpus`
 
+## Quick Start with Defined Resources
+
+Use this pattern when you want a reproducible run with fixed compute limits.
+Example budget used below:
+
+- 1 GPU with about 24 GB VRAM
+- 12 CPU workers for preprocessing/fingerprint
+- 12 training workers (`nnUNet_def_n_proc`, `nnUNet_n_proc_DA`)
+
+```bash
+# Pin training worker counts (adjust to your node/job allocation)
+export nnUNet_def_n_proc=12
+export nnUNet_n_proc_DA=12
+
+# 1) Fingerprint with integrity check
+nnUNetv2_extract_fingerprint \
+  --inventory /data/inventory.json \
+  --dataset-id 310 \
+  --dataset-name MyDataset \
+  --cache-dir /data/.nnunet_cache \
+  -npfp 12 \
+  --verify_dataset_integrity \
+  --clean
+
+# 2) Plan + preprocess with explicit VRAM/CPU targets
+nnUNetv2_plan_and_preprocess \
+  --inventory /data/inventory.json \
+  --dataset-id 310 \
+  --dataset-name MyDataset \
+  --cache-dir /data/.nnunet_cache \
+  -gpu_memory_target 24 \
+  -npfp 12 \
+  -np 12 \
+  --clean
+
+# 3) Train fold 0 using 1 GPU
+nnUNetv2_train 310 3d_fullres 0 \
+  --inventory /data/inventory.json \
+  --dataset-id 310 \
+  --dataset-name MyDataset \
+  --cache-dir /data/.nnunet_cache \
+  --results-dir /data/.nnunet_results \
+  -num_gpus 1
+```
+
+Keep `--dataset-id`, `--dataset-name`, `--cache-dir`, and `--results-dir` stable across all stages.
+
 ## Inventory JSON Schema
 
 Required top-level keys:
