@@ -53,7 +53,7 @@ class NibabelIO(BaseReaderWriter):
             )
 
             # transpose image to be consistent with the way SimpleITk reads images. Yeah. Annoying.
-            images.append(nib_image.get_fdata().transpose((2, 1, 0))[None])
+            images.append(nib_image.get_fdata(dtype=np.float32).transpose((2, 1, 0))[None])
 
         if not self._check_all_same([i.shape for i in images]):
             print('ERROR! Not all input images have the same shape!')
@@ -134,7 +134,7 @@ class NibabelIOWithReorient(BaseReaderWriter):
             )
 
             # transpose image to be consistent with the way SimpleITk reads images. Yeah. Annoying.
-            images.append(reoriented_image.get_fdata().transpose((2, 1, 0))[None])
+            images.append(reoriented_image.get_fdata(dtype=np.float32).transpose((2, 1, 0))[None])
 
         if not self._check_all_same([i.shape for i in images]):
             print('ERROR! Not all input images have the same shape!')

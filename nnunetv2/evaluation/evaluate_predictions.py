@@ -202,7 +202,8 @@ def compute_metrics_on_folder_simple(folder_ref: str, folder_pred: str, labels: 
                                      ignore_label: int = None,
                                      chill: bool = False):
     example_file = subfiles(folder_ref, join=True)[0]
-    file_ending = os.path.splitext(example_file)[-1]
+    # splitext("case.nii.gz") returns ".gz", but we need ".nii.gz" for robust filtering
+    file_ending = '.nii.gz' if example_file.endswith('.nii.gz') else os.path.splitext(example_file)[-1]
     rw = determine_reader_writer_from_file_ending(file_ending, example_file, allow_nonmatching_filename=True,
                                                   verbose=False)()
     # maybe auto set output file

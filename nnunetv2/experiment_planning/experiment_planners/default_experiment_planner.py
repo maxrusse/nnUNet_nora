@@ -1,5 +1,6 @@
 import shutil
 import os
+from numbers import Real
 from copy import deepcopy
 from typing import List, Union, Tuple
 
@@ -75,10 +76,9 @@ class ExperimentPlanner(object):
         self.preprocessor_name = preprocessor_name
         self.plans_identifier = plans_name
         self.overwrite_target_spacing = overwrite_target_spacing
-        assert overwrite_target_spacing is None or len(overwrite_target_spacing), 'if overwrite_target_spacing is ' \
-                                                                                  'used then three floats must be ' \
-                                                                                  'given (as list or tuple)'
-        assert overwrite_target_spacing is None or all([isinstance(i, float) for i in overwrite_target_spacing]), \
+        assert overwrite_target_spacing is None or len(overwrite_target_spacing) == 3, \
+            'if overwrite_target_spacing is used then exactly three numbers must be given (as list or tuple)'
+        assert overwrite_target_spacing is None or all([isinstance(i, Real) for i in overwrite_target_spacing]), \
             'if overwrite_target_spacing is used then three floats must be given (as list or tuple)'
 
         self.plans = None

@@ -112,7 +112,7 @@ def preprocess_entry():
                         help="[OPTIONAL] Use this to define how many processes are to be used. If this is just one number then "
                              "this number of processes is used for all configurations specified with -c. If it's a "
                              "list of numbers this list must have as many elements as there are configurations. We "
-                             "then iterate over zip(configs, num_processes) to determine then umber of processes "
+                             "then iterate over zip(configs, num_processes) to determine the number of processes "
                              "used for each configuration. More processes is always faster (up to the number of "
                              "threads your PC can support, so 8 for a 4 core CPU with hyperthreading. If you don't "
                              "know what that is then dont touch it, or at least don't increase it!). DANGER: More "
@@ -150,7 +150,7 @@ def plan_and_preprocess_entry():
                              "each dataset!")
     parser.add_argument('--no_pp', default=False, action='store_true', required=False,
                         help='[OPTIONAL] Set this to only run fingerprint extraction and experiment planning (no '
-                             'preprocesing). Useful for debugging.')
+                             'preprocessing). Useful for debugging.')
     parser.add_argument("--clean", required=False, default=False, action="store_true",
                         help='[OPTIONAL] Set this flag to overwrite existing fingerprints. If this flag is not set and a '
                              'fingerprint already exists, the fingerprint extractor will not run. REQUIRED IF YOU '
@@ -179,7 +179,7 @@ def plan_and_preprocess_entry():
                              '(as a baseline). Changing the target spacing for the other configurations is currently '
                              'not implemented. New target spacing must be a list of three numbers!')
     parser.add_argument('-overwrite_plans_name', default=None, required=False,
-                        help='[OPTIONAL] uSE A CUSTOM PLANS IDENTIFIER. If you used -gpu_memory_target, '
+                        help='[OPTIONAL] USE A CUSTOM PLANS IDENTIFIER. If you used -gpu_memory_target, '
                              '-preprocessor_name or '
                              '-overwrite_target_spacing it is best practice to use -overwrite_plans_name to generate a '
                              'differently named plans file such that the nnunet default plans are not '
@@ -193,7 +193,7 @@ def plan_and_preprocess_entry():
                         help="[OPTIONAL] Use this to define how many processes are to be used. If this is just one number then "
                              "this number of processes is used for all configurations specified with -c. If it's a "
                              "list of numbers this list must have as many elements as there are configurations. We "
-                             "then iterate over zip(configs, num_processes) to determine then umber of processes "
+                             "then iterate over zip(configs, num_processes) to determine the number of processes "
                              "used for each configuration. More processes is always faster (up to the number of "
                              "threads your PC can support, so 8 for a 4 core CPU with hyperthreading. If you don't "
                              "know what that is then dont touch it, or at least don't increase it!). DANGER: More "

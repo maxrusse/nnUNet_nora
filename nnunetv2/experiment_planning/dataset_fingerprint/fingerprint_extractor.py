@@ -65,7 +65,7 @@ class DatasetFingerprintExtractor(object):
             # foreground_pixels. We could also just sample less in those cases but that would than cause these
             # training cases to be underrepresented
             intensities_per_channel.append(
-                rs.choice(foreground_pixels, num_samples, replace=True) if num_fg > 0 else [])
+                rs.choice(foreground_pixels, num_samples, replace=True) if num_fg > 0 else np.array([], dtype=images[i].dtype))
 
             mean, median, mini, maxi, percentile_99_5, percentile_00_5 = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
             if num_fg > 0:
@@ -174,14 +174,22 @@ class DatasetFingerprintExtractor(object):
             intensity_statistics_per_channel = {}
             percentiles = np.array((0.5, 50.0, 99.5))
             for i in range(num_channels):
-                percentile_00_5, median, percentile_99_5 = np.percentile(foreground_intensities_per_channel[i],
-                                                                         percentiles)
+                channel_values = foreground_intensities_per_channel[i]
+                if channel_values.size > 0:
+                    percentile_00_5, median, percentile_99_5 = np.percentile(channel_values, percentiles)
+                    mean = float(np.mean(channel_values))
+                    std = float(np.std(channel_values))
+                    min_val = float(np.min(channel_values))
+                    max_val = float(np.max(channel_values))
+                else:
+                    percentile_00_5, median, percentile_99_5 = np.nan, np.nan, np.nan
+                    mean, std, min_val, max_val = np.nan, np.nan, np.nan, np.nan
                 intensity_statistics_per_channel[i] = {
-                    'mean': float(np.mean(foreground_intensities_per_channel[i])),
+                    'mean': mean,
                     'median': float(median),
-                    'std': float(np.std(foreground_intensities_per_channel[i])),
-                    'min': float(np.min(foreground_intensities_per_channel[i])),
-                    'max': float(np.max(foreground_intensities_per_channel[i])),
+                    'std': std,
+                    'min': min_val,
+                    'max': max_val,
                     'percentile_99_5': float(percentile_99_5),
                     'percentile_00_5': float(percentile_00_5),
                 }

@@ -1,3 +1,5 @@
+import os
+import shutil
 import warnings
 from typing import List, Type, Optional, Tuple, Union
 
@@ -102,7 +104,9 @@ def preprocess_dataset(dataset_id: int,
                        configurations: Union[Tuple[str], List[str]] = ('2d', '3d_fullres', '3d_lowres'),
                        num_processes: Union[int, Tuple[int, ...], List[int]] = (8, 4, 8),
                        verbose: bool = False) -> None:
-    if not isinstance(num_processes, list):
+    if isinstance(num_processes, int):
+        num_processes = [num_processes]
+    elif not isinstance(num_processes, list):
         num_processes = list(num_processes)
     if len(num_processes) == 1:
         num_processes = num_processes * len(configurations)
@@ -130,15 +134,15 @@ def preprocess_dataset(dataset_id: int,
 
     # copy the gt to a folder in the nnUNet_preprocessed so that we can do validation even if the raw data is no
     # longer there (useful for compute cluster where only the preprocessed data is available)
-    from distutils.file_util import copy_file
     maybe_mkdir_p(join(nnUNet_preprocessed, dataset_name, 'gt_segmentations'))
     dataset_json = load_json(join(nnUNet_raw, dataset_name, 'dataset.json'))
     dataset = get_filenames_of_train_images_and_targets(join(nnUNet_raw, dataset_name), dataset_json)
     # only copy files that are newer than the ones already present
     for k in dataset:
-        copy_file(dataset[k]['label'],
-                  join(nnUNet_preprocessed, dataset_name, 'gt_segmentations', k + dataset_json['file_ending']),
-                  update=True)
+        src = dataset[k]['label']
+        dst = join(nnUNet_preprocessed, dataset_name, 'gt_segmentations', k + dataset_json['file_ending'])
+        if (not os.path.isfile(dst)) or (os.path.getmtime(src) > os.path.getmtime(dst)):
+            shutil.copy2(src, dst)
 
 
 def preprocess(dataset_ids: List[int],
