@@ -23,72 +23,17 @@ Training and prediction:
 
 - all of the above, plus `--results-dir <path>`
 
-## Hardware Scaling and SLURM Alignment
+## Hardware Alignment
 
 Inventory mode does not auto-detect cluster hardware or auto-tune all scaling knobs.
 It only normalizes dataset paths and runtime roots.
 
-Set hardware-related knobs explicitly:
+Align hardware-related settings with your cluster profile:
 
-- Planner/VRAM target (planning): `-pl`, `-gpu_memory_target`
-- Fingerprint workers: `-npfp`
-- Preprocess workers: `-np`
-- General multiprocessing default: env `nnUNet_def_n_proc`
-- Data augmentation workers per GPU (training): env `nnUNet_n_proc_DA`
-- Number of GPUs used by training: `-num_gpus`
-
-Recommended SLURM pattern:
-
-- Set `nnUNet_def_n_proc` to your CPU allocation.
-- Set `nnUNet_n_proc_DA` to a conservative per-GPU value (for example `4-12`, depending on CPU/RAM pressure).
-- Match planner and `-gpu_memory_target` to your GPU class.
-
-Single-GPU example:
-
-```bash
-#SBATCH --gpus=1
-#SBATCH --cpus-per-task=16
-
-export nnUNet_def_n_proc=${SLURM_CPUS_PER_TASK}
-export nnUNet_n_proc_DA=8
-
-nnUNetv2_plan_and_preprocess \
-  --inventory /data/inventory.json \
-  --dataset-id 310 \
-  --dataset-name MyDataset \
-  --cache-dir /data/.nnunet_cache \
-  -pl nnUNetPlannerResEncL \
-  -gpu_memory_target 24 \
-  -npfp 8 \
-  -np 8 \
-  -c 3d_fullres
-
-nnUNetv2_train 310 3d_fullres 0 \
-  --inventory /data/inventory.json \
-  --dataset-id 310 \
-  --dataset-name MyDataset \
-  --cache-dir /data/.nnunet_cache \
-  --results-dir /data/.nnunet_results \
-  -num_gpus 1
-```
-
-Multi-GPU example (DDP):
-
-```bash
-#SBATCH --gpus=4
-#SBATCH --cpus-per-task=32
-
-export nnUNet_def_n_proc=${SLURM_CPUS_PER_TASK}
-export nnUNet_n_proc_DA=6
-
-nnUNetv2_train 310 3d_fullres 0 \
-  --inventory /data/inventory.json \
-  --dataset-id 310 \
-  --dataset-name MyDataset \
-  --cache-dir /data/.nnunet_cache \
-  --results-dir /data/.nnunet_results \
-  -num_gpus 4
-```
+- Planner/VRAM target: `-pl`, `-gpu_memory_target`
+- Fingerprint/preprocess workers: `-npfp`, `-np`
+- Training workers: env `nnUNet_def_n_proc`, env `nnUNet_n_proc_DA`
+- GPU count used by training: `-num_gpus`
 
 ## Inventory JSON Schema
 
