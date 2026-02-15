@@ -64,8 +64,8 @@ def generate_inference_command(dataset_name_or_id: Union[int, str], configuratio
     trained_model_folder = get_output_folder(dataset_name_or_id, trainer_name, plans_identifier, configuration_name, fold=None)
     plans_manager = PlansManager(join(trained_model_folder, 'plans.json'))
     configuration_manager = plans_manager.get_configuration(configuration_name)
-    if 'previous_stage' in plans_manager.available_configurations:
-        prev_stage = configuration_manager.previous_stage_name
+    prev_stage = configuration_manager.previous_stage_name
+    if prev_stage is not None:
         predict_command += generate_inference_command(dataset_name_or_id, prev_stage, plans_identifier, trainer_name,
                                                       folds, None, output_folder='OUTPUT_FOLDER_PREV_STAGE') + '\n'
         folder_with_segs_from_prev_stage = 'OUTPUT_FOLDER_PREV_STAGE'
