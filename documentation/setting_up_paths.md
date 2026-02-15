@@ -52,3 +52,5 @@ Use CLI options instead:
 - `--results-dir` (training)
 
 See [inventory_mode.md](inventory_mode.md) for details and examples.
+For cluster usage, also see the "Hardware Scaling and SLURM Alignment" section in
+[inventory_mode.md](inventory_mode.md).
