@@ -27,6 +27,20 @@ nnUNetv2_plan_and_preprocess \
   -c 2d -np 1 --clean
 ```
 
+### NORA Edit: Minimal JSON Converter
+This repository root includes `json_to_nnunet_inventory.py`, a minimal converter for NORA-style JSON.
+
+Rule:
+- first `.nii` per case -> image input
+- first `.nii.gz` per case -> label/mask
+
+Usage:
+```bash
+python3 json_to_nnunet_inventory.py \
+  --input-json /path/to/data.json \
+  --output-json /path/to/inventory.json
+```
+
 ## **2025-10-23 There seems to be a [severe performance regression with torch 2.9.0 and 3D convs](https://github.com/pytorch/pytorch/issues/166122) (when using AMP). Please use torch 2.8.0 or lower with nnU-Net!**
 
 
